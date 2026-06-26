@@ -14,12 +14,14 @@ describe('UsersService', () => {
       rut: '21546041-k',
       fecha_nacimiento: '06-04-2004',
       ciudad: 'Coquimbo',
+      gustos: ['harry potter', 'videojuegos', 'programacion']
     },
     {
       nombre: 'fernando',
       rut: '12345678-9',
       fecha_nacimiento: '01-01-2000',
       ciudad: 'Santiago',
+      gustos: ['Minecraft', 'Juego de tronos', 'Peliculas de accion']
     },
   ];
 
@@ -56,6 +58,7 @@ describe('UsersService', () => {
         rut: '12345677-9',
         fecha_nacimiento: '01-01-2000',
         ciudad: 'Santiago',
+        gustos: ['comida italiana', 'libros', 'viajar'],
       };
 
       const result = service.createUser(newUser);
@@ -71,6 +74,7 @@ describe('UsersService', () => {
         rut: '21546041-k',
         fecha_nacimiento: '06-04-2004',
         ciudad: 'Coquimbo',
+        gustos: ['harry potter', 'videojuegos', 'programacion'],
       };
 
       expect(() => service.createUser(existingUser)).toThrow(ConflictException);

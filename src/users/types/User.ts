@@ -3,4 +3,5 @@ export interface User {
   rut: string;
   fecha_nacimiento: string;
   ciudad: string;
+  gustos: string[];
 }
