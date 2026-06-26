@@ -50,7 +50,9 @@ describe('AppController (e2e)', () => {
         .get('/users')
         .expect(200);
       expect(getResponseAfter.body.length).toBe(initialLength + 1);
-      expect(getResponseAfter.body.find((u: any) => u.rut === testUser.rut)).toBeDefined();
+      expect(
+        getResponseAfter.body.find((u: any) => u.rut === testUser.rut),
+      ).toBeDefined();
 
       // 4. DELETE user (using path param)
       await request(app.getHttpServer())
@@ -62,7 +64,9 @@ describe('AppController (e2e)', () => {
         .get('/users')
         .expect(200);
       expect(getResponseFinal.body.length).toBe(initialLength);
-      expect(getResponseFinal.body.find((u: any) => u.rut === testUser.rut)).toBeUndefined();
+      expect(
+        getResponseFinal.body.find((u: any) => u.rut === testUser.rut),
+      ).toBeUndefined();
     });
 
     it('should return 400 when trying to create a user with missing fields', async () => {
