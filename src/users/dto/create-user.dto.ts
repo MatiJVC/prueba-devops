@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString } from 'class-validator';
+import { IsNotEmpty, IsString, IsArray, ArrayNotEmpty, isArray, isString } from 'class-validator';
 
 export class CreateUserDto {
   @IsString()
@@ -16,4 +16,9 @@ export class CreateUserDto {
   @IsString()
   @IsNotEmpty()
   ciudad: string;
+
+  @isArray()
+  @ArrayNotEmpty()
+  @isString({ each: true })
+  gustos: string[];
 }

@@ -12,6 +12,7 @@ describe('UsersController', () => {
       rut: '21546041-k',
       fecha_nacimiento: '06-04-2004',
       ciudad: 'Coquimbo',
+      gustos: ['comida italiana', 'libros', 'viajar'],
     },
   ];
 
@@ -57,6 +58,7 @@ describe('UsersController', () => {
         rut: '12345677-9',
         fecha_nacimiento: '01-01-2000',
         ciudad: 'Santiago',
+        gustos: ['comida italiana', 'libros', 'viajar'],
       };
       const result = controller.create(newUser);
       expect(result).toEqual(newUser);
