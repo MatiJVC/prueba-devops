@@ -3,50 +3,39 @@ import {
   NotFoundException,
   ConflictException,
 } from '@nestjs/common';
-import { readFileSync, writeFileSync, existsSync } from 'fs';
-import { join } from 'path';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { User } from '../entities/user.entity';
+import { CreateUserDto } from './dto/create-user.dto';
 
 @Injectable()
 export class UsersService {
+  constructor(
+    @InjectRepository(User)
+    private usersRepository: Repository<User>,
+  ) { }
+
   findAll() {
-    const file = readFileSync(
-      join(__dirname, '..', 'db', 'users.json'),
-      'utf-8',
-    );
-    return JSON.parse(file);
+    return this.usersRepository.find();
   }
 
-  createUser(user: any) {
-    const users = this.findAll();
-    const exists = users.some((u: any) => u.rut === user.rut);
+  async createUser(user: CreateUserDto) {
+    const exists = await this.usersRepository.findOne({ where: { rut: user.rut } });
     if (exists) {
       throw new ConflictException(`User with RUT ${user.rut} already exists`);
     }
-    users.push(user);
-    this.saveUsers(users);
+    const newUser = this.usersRepository.create(user);
+    return this.usersRepository.save(newUser);
+  }
+
+
+  async deleteUser(rut: string) {
+    const user = await this.usersRepository.findOne({ where: { rut } });
+    if (!user) {
+      throw new NotFoundException(`User with RUT ${rut} not found`);
+    }
+    await this.usersRepository.remove(user);
     return user;
   }
 
-  deleteUser(rut: string) {
-    const users = this.findAll();
-    const index = users.findIndex((user: any) => user.rut === rut);
-    if (index === -1) {
-      throw new NotFoundException(`User with RUT ${rut} not found`);
-    }
-    const deletedUser = users[index];
-    users.splice(index, 1);
-    this.saveUsers(users);
-    return deletedUser;
-  }
-
-  private saveUsers(users: any[]) {
-    const data = JSON.stringify(users, null, 4);
-    const activePath = join(__dirname, '..', 'db', 'users.json');
-    writeFileSync(activePath, data, 'utf-8');
-
-    const sourcePath = join(process.cwd(), 'src', 'db', 'users.json');
-    if (existsSync(sourcePath)) {
-      writeFileSync(sourcePath, data, 'utf-8');
-    }
-  }
 }

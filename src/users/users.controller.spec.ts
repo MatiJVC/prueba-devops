@@ -17,11 +17,11 @@ describe('UsersController', () => {
   ];
 
   const mockUsersService = {
-    findAll: jest.fn().mockReturnValue(mockUsers),
-    createUser: jest.fn().mockImplementation((user) => user),
+    findAll: jest.fn().mockResolvedValue(mockUsers),
+    createUser: jest.fn().mockImplementation((user) => Promise.resolve(user)),
     deleteUser: jest
       .fn()
-      .mockImplementation((rut) => ({ rut, nombre: 'deleted' })),
+      .mockImplementation((rut) => Promise.resolve({ rut, nombre: 'deleted' })),
   };
 
   beforeEach(async () => {
@@ -44,15 +44,15 @@ describe('UsersController', () => {
   });
 
   describe('findAll', () => {
-    it('should return all users', () => {
-      const result = controller.findAll();
+    it('should return all users', async () => {
+      const result = await controller.findAll();
       expect(result).toEqual(mockUsers);
       expect(service.findAll).toHaveBeenCalled();
     });
   });
 
   describe('create', () => {
-    it('should create a user', () => {
+    it('should create a user', async () => {
       const newUser = {
         nombre: 'camila',
         rut: '12345677-9',
@@ -60,15 +60,15 @@ describe('UsersController', () => {
         ciudad: 'Santiago',
         gustos: ['comida italiana', 'libros', 'viajar'],
       };
-      const result = controller.create(newUser);
+      const result = await controller.create(newUser);
       expect(result).toEqual(newUser);
       expect(service.createUser).toHaveBeenCalledWith(newUser);
     });
   });
 
   describe('delete', () => {
-    it('should delete a user by rut', () => {
-      const result = controller.delete('12345678-9');
+    it('should delete a user by rut', async () => {
+      const result = await controller.delete('12345678-9');
       expect(result.rut).toBe('12345678-9');
       expect(service.deleteUser).toHaveBeenCalledWith('12345678-9');
     });

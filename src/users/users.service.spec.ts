@@ -1,15 +1,17 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { UsersService } from './users.service';
 import { ConflictException, NotFoundException } from '@nestjs/common';
-import * as fs from 'fs';
-
-jest.mock('fs');
+import { getRepositoryToken } from '@nestjs/typeorm';
+import { User } from '../entities/user.entity';
+import { Repository } from 'typeorm';
 
 describe('UsersService', () => {
   let service: UsersService;
+  let repository: Repository<User>;
 
   const mockUsers = [
     {
+      id: 1,
       nombre: 'matias',
       rut: '21546041-k',
       fecha_nacimiento: '06-04-2004',
@@ -17,6 +19,7 @@ describe('UsersService', () => {
       gustos: ['harry potter', 'videojuegos', 'programacion']
     },
     {
+      id: 2,
       nombre: 'fernando',
       rut: '12345678-9',
       fecha_nacimiento: '01-01-2000',
@@ -25,13 +28,28 @@ describe('UsersService', () => {
     },
   ];
 
+  const mockRepository = {
+    find: jest.fn(),
+    findOne: jest.fn(),
+    create: jest.fn(),
+    save: jest.fn(),
+    remove: jest.fn(),
+  };
+
   beforeEach(async () => {
     jest.clearAllMocks();
     const module: TestingModule = await Test.createTestingModule({
-      providers: [UsersService],
+      providers: [
+        UsersService,
+        {
+          provide: getRepositoryToken(User),
+          useValue: mockRepository,
+        },
+      ],
     }).compile();
 
     service = module.get<UsersService>(UsersService);
+    repository = module.get<Repository<User>>(getRepositoryToken(User));
   });
 
   it('should be defined', () => {
@@ -39,20 +57,18 @@ describe('UsersService', () => {
   });
 
   describe('findAll', () => {
-    it('should return an array of users', () => {
-      (fs.readFileSync as jest.Mock).mockReturnValue(JSON.stringify(mockUsers));
+    it('should return an array of users', async () => {
+      mockRepository.find.mockResolvedValue(mockUsers);
 
-      const result = service.findAll();
+      const result = await service.findAll();
       expect(result).toEqual(mockUsers);
-      expect(fs.readFileSync).toHaveBeenCalled();
+      expect(mockRepository.find).toHaveBeenCalled();
     });
   });
 
   describe('createUser', () => {
-    it('should create and save a new user', () => {
-      (fs.readFileSync as jest.Mock).mockReturnValue(JSON.stringify(mockUsers));
-      (fs.existsSync as jest.Mock).mockReturnValue(true);
-
+    it('should create and save a new user', async () => {
+      mockRepository.findOne.mockResolvedValue(null);
       const newUser = {
         nombre: 'camila',
         rut: '12345677-9',
@@ -60,15 +76,17 @@ describe('UsersService', () => {
         ciudad: 'Santiago',
         gustos: ['comida italiana', 'libros', 'viajar'],
       };
+      mockRepository.create.mockReturnValue(newUser);
+      mockRepository.save.mockResolvedValue(newUser);
 
-      const result = service.createUser(newUser);
+      const result = await service.createUser(newUser);
       expect(result).toEqual(newUser);
-      expect(fs.writeFileSync).toHaveBeenCalled();
+      expect(mockRepository.findOne).toHaveBeenCalledWith({ where: { rut: newUser.rut } });
+      expect(mockRepository.create).toHaveBeenCalledWith(newUser);
+      expect(mockRepository.save).toHaveBeenCalledWith(newUser);
     });
 
-    it('should throw ConflictException if user already exists', () => {
-      (fs.readFileSync as jest.Mock).mockReturnValue(JSON.stringify(mockUsers));
-
+    it('should throw ConflictException if user already exists', async () => {
       const existingUser = {
         nombre: 'matias',
         rut: '21546041-k',
@@ -76,29 +94,31 @@ describe('UsersService', () => {
         ciudad: 'Coquimbo',
         gustos: ['harry potter', 'videojuegos', 'programacion'],
       };
+      mockRepository.findOne.mockResolvedValue(existingUser);
 
-      expect(() => service.createUser(existingUser)).toThrow(ConflictException);
-      expect(fs.writeFileSync).not.toHaveBeenCalled();
+      await expect(service.createUser(existingUser)).rejects.toThrow(ConflictException);
+      expect(mockRepository.create).not.toHaveBeenCalled();
+      expect(mockRepository.save).not.toHaveBeenCalled();
     });
   });
 
   describe('deleteUser', () => {
-    it('should delete a user and return the deleted user', () => {
-      (fs.readFileSync as jest.Mock).mockReturnValue(JSON.stringify(mockUsers));
-      (fs.existsSync as jest.Mock).mockReturnValue(true);
+    it('should delete a user and return the deleted user', async () => {
+      const userToDelete = mockUsers[1];
+      mockRepository.findOne.mockResolvedValue(userToDelete);
+      mockRepository.remove.mockResolvedValue(userToDelete);
 
-      const result = service.deleteUser('12345678-9');
+      const result = await service.deleteUser('12345678-9');
       expect(result.rut).toBe('12345678-9');
-      expect(fs.writeFileSync).toHaveBeenCalled();
+      expect(mockRepository.findOne).toHaveBeenCalledWith({ where: { rut: '12345678-9' } });
+      expect(mockRepository.remove).toHaveBeenCalledWith(userToDelete);
     });
 
-    it('should throw NotFoundException if user to delete does not exist', () => {
-      (fs.readFileSync as jest.Mock).mockReturnValue(JSON.stringify(mockUsers));
+    it('should throw NotFoundException if user to delete does not exist', async () => {
+      mockRepository.findOne.mockResolvedValue(null);
 
-      expect(() => service.deleteUser('non-existent')).toThrow(
-        NotFoundException,
-      );
-      expect(fs.writeFileSync).not.toHaveBeenCalled();
+      await expect(service.deleteUser('non-existent')).rejects.toThrow(NotFoundException);
+      expect(mockRepository.remove).not.toHaveBeenCalled();
     });
   });
 });

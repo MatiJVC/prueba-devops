@@ -29,7 +29,14 @@ describe('AppController (e2e)', () => {
       rut: '99999999-9',
       fecha_nacimiento: '01-01-2000',
       ciudad: 'Santiago',
+      gustos: ['test'],
     };
+
+    beforeEach(async () => {
+      try {
+        await request(app.getHttpServer()).delete(`/users/${testUser.rut}`);
+      } catch (e) {}
+    });
 
     it('should create, retrieve, and delete a user', async () => {
       // 1. GET initial users list
@@ -39,11 +46,14 @@ describe('AppController (e2e)', () => {
       const initialLength = getResponseBefore.body.length;
 
       // 2. POST create user
-      await request(app.getHttpServer())
+      const createResponse = await request(app.getHttpServer())
         .post('/users')
         .send(testUser)
-        .expect(201)
-        .expect(testUser);
+        .expect(201);
+      expect(createResponse.body).toEqual({
+        id: expect.any(Number),
+        ...testUser,
+      });
 
       // 3. GET verify user exists in the list
       const getResponseAfter = await request(app.getHttpServer())
